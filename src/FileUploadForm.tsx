@@ -6,7 +6,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
-  Link,
   MenuItem,
   Radio,
   RadioGroup,
@@ -15,13 +14,16 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { FC, useState } from 'react';
+import { FC, useCallback, useState } from 'react';
+import { useDropzone } from 'react-dropzone';
 import styles from './FileUploadForm.module.scss';
 import FormTitle from './FormTitle';
-import createUploadTrigger from './createUploadTrigger';
 
 type ClientSelect = 'Single' | 'Multiple';
 type Clients = { title: string; clients?: string[] }[];
+interface ClientLocation {
+  [title: string]: string;
+}
 
 const IMPORT_NAMES = ['Import Name 1', 'Import Name 2'];
 const CLIENT_SELECT_OPTIONS = ['Single', 'Multiple'];
@@ -51,18 +53,20 @@ interface Props {
 
 const FileUploadForm: FC<Props> = props => {
   const [importName, setImportName] = useState<string>('');
+  const [clientLocation, setClientLocation] = useState<ClientLocation>({});
   const [client, setClient] = useState<ClientSelect>('Multiple');
   const [socialDistance, setSocialDistance] = useState<boolean>(true);
   const [tolerance, setTolerance] = useState<boolean>(true);
   const [uploadSnackOpen, setUploadSnackOpen] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File>();
 
-  const onFileUploadClick = createUploadTrigger(file => {
-    setSelectedFile(file);
-  });
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setSelectedFile(acceptedFiles[0] ?? null);
+  }, []);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   return (
-    <Dialog open={props.open} onClose={() => props.setOpen(false)}>
+    <Dialog open={props.open} onClose={() => props.setOpen(false)} className={styles.modal}>
       <DialogTitle>
         <Typography color='primary' fontWeight='bold' className={styles.documentTitle} variant='h4'>
           Document Upload
@@ -89,14 +93,17 @@ const FileUploadForm: FC<Props> = props => {
             <div className={styles.divider} />
             <FormTitle>Select a manifset that you'd like to import</FormTitle>
             <div className={styles.uploadBox}>
-              <div className={styles.innerUploadBox}>
-                <ArticleIcon color='secondary' />
-                <Typography>
-                  Drag & Drop Here Or{' '}
-                  <Link fontWeight='bold' onClick={() => onFileUploadClick()}>
-                    Browse
-                  </Link>
-                </Typography>
+              <div className={styles.innerUploadBox} {...getRootProps()}>
+                <input {...getInputProps()} />
+                <ArticleIcon fontSize='large' color='secondary' />
+                {!isDragActive ? (
+                  <Typography>
+                    Drag & Drop Here Or{' '}
+                    <Typography color='primary' fontWeight='bold'>
+                      Browse
+                    </Typography>
+                  </Typography>
+                ) : null}
               </div>
               <Button onClick={() => setUploadSnackOpen(true)} variant='contained'>
                 Upload Manifest
@@ -106,15 +113,15 @@ const FileUploadForm: FC<Props> = props => {
             {selectedFile ? (
               <>
                 <div className={styles.uploadedFile}>
-                  <ArticleIcon color='secondary' />
+                  <ArticleIcon fontSize='large' color='secondary' />
                   <Typography>{selectedFile.name}</Typography>
                 </div>
                 <div className={styles.divider} />
               </>
             ) : null}
-            <FormTitle>Location Checking:</FormTitle>
+            <FormTitle>Elapse Data Checking:</FormTitle>
             <FormTitle fontWeight='normal' color='green'>
-              All Available!
+              No Elapsed Dates!
             </FormTitle>
             <div className={styles.divider} />
             <FormTitle>Tolerance Window:</FormTitle>
@@ -155,10 +162,17 @@ const FileUploadForm: FC<Props> = props => {
               <div className={styles.clientItem}>
                 <Typography>{v.title}</Typography>
                 <TextField
+                  className={styles.clientSelect}
+                  label='Select Client'
                   select
-                  value={importName}
+                  value={clientLocation[v.title]}
                   size='small'
-                  onChange={e => setImportName(e.target.value)}
+                  onChange={e =>
+                    setClientLocation({
+                      ...clientLocation,
+                      [v.title]: e.target.value,
+                    })
+                  }
                 >
                   {(v.clients || []).map(v => (
                     <MenuItem value={v} key={v}>
