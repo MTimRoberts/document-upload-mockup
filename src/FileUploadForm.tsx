@@ -126,7 +126,7 @@ const FileUploadForm: FC<Props> = props => {
             <div className={styles.divider} />
             <FormTitle>Tolerance Window:</FormTitle>
             <div className={styles.toleranceWindowContainer}>
-              <Switch value={tolerance} onChange={e => setTolerance(e.target.checked)} />
+              <Switch checked={tolerance} onChange={e => setTolerance(e.target.checked)} />
               <Typography>{`Toggle ${tolerance ? 'ON' : 'OFF'}`}</Typography>
             </div>
           </div>
